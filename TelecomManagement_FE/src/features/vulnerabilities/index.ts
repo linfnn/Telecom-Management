@@ -1,0 +1,1 @@
+export { VulnerabilityManagementPage } from "./VulnerabilityManagementPage";
