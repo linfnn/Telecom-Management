@@ -12,6 +12,7 @@ import {
   BarElement,
   CategoryScale,
   Chart as ChartJS,
+  DoughnutController,
   Legend,
   LinearScale,
   LineController,
@@ -49,6 +50,7 @@ ChartJS.register(
   ArcElement,
   LineController,
   BarController,
+  DoughnutController,
   Tooltip,
   Legend,
 );
