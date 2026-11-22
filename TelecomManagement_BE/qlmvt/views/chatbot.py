@@ -374,17 +374,26 @@ def _dashboard_summary(user):
     }
 
 
-def _explicit_export_request(message):
+def _normalize_message(message):
     normalized = unicodedata.normalize("NFD", message.lower())
     normalized = "".join(
         character for character in normalized if unicodedata.category(character) != "Mn"
     )
-    normalized = re.sub(r"\s+", " ", normalized).strip()
+    return re.sub(r"\s+", " ", normalized).strip()
+
+
+def _explicit_export_request(message):
+    normalized = _normalize_message(message)
     if re.match(
-        r"^(how|what|where|why|when|can i|how do i|cach|lam the nao|huong dan|"
+        r"^(how|what|where|why|when|can i|could i|how do i|how to|how can i|"
+        r"i want to know|i need to know|i would like to know|tell me how|"
+        r"explain|cach|lam the nao|huong dan|"
         r"toi muon biet|cho toi biet)\b",
         normalized,
-    ) or re.search(r"\b(la gi|what does|what is|meaning of)\b", normalized):
+    ) or re.search(
+        r"\b(la gi|what does|what is|meaning of|how to|steps to|process for)\b",
+        normalized,
+    ):
         return False
     return bool(
         re.search(
@@ -396,6 +405,49 @@ def _explicit_export_request(message):
             r"\b(backup|back up|database|data|json|file|du lieu|ban sao|sao luu)\b",
             normalized,
         )
+    )
+
+
+def _change_request_guidance(user, message):
+    normalized = _normalize_message(message)
+    action = (
+        r"(?:add|create|insert|update|edit|modify|change|delete|remove|restore|"
+        r"import|them|tao|bo sung|cap nhat|chinh sua|sua|xoa|doi|khoi phuc|nhap)"
+    )
+    target = (
+        r"(?:device|equipment|employee|staff|incident|vulnerability|link|record|"
+        r"data|information|profile|status|thiet bi|nhan vien|su co|lo hong|"
+        r"lien ket|ban ghi|du lieu|thong tin|ho so|trang thai)"
+    )
+    direct_request = re.search(
+        rf"^(?:(?:please|can you|could you|would you|i want to|i need to|"
+        rf"i would like to|hay|vui long|toi muon|giup toi)\s+)*\b{action}\b",
+        normalized,
+    )
+    instruction_request = re.search(
+        rf"^(?:how to|how do i|how can i|tell me how|explain how|cach|"
+        rf"lam the nao|huong dan|cho toi biet cach|toi muon biet cach)"
+        rf".{{0,80}}\b{action}\b",
+        normalized,
+    )
+    targeted_request = re.search(
+        rf"\b{action}\b.{{0,80}}\b{target}\b", normalized
+    )
+    if not (direct_request or instruction_request or targeted_request):
+        return None
+
+    if user.is_staff:
+        return (
+            "Chatbot chỉ tra cứu và không ghi dữ liệu. Để thêm, cập nhật hoặc xóa, "
+            "hãy thao tác trong module tương ứng trên giao diện quản trị; kiểm tra "
+            "bản ghi và xác nhận trước khi lưu. Tôi có thể giúp tra cứu dữ liệu "
+            "liên quan trước khi bạn thao tác."
+        )
+    return (
+        "Chatbot chỉ tra cứu và không ghi dữ liệu. Bạn chỉ được thao tác trên hồ sơ "
+        "cá nhân và các sự cố/lỗ hổng được phân công theo quyền hiện có; việc thêm, "
+        "xóa hoặc thay đổi dữ liệu ngoài phạm vi này cần Admin. Hãy dùng module "
+        "được cấp quyền hoặc liên hệ Admin."
     )
 
 
@@ -443,8 +495,9 @@ def _provider_request(messages, tools):
     payload = {
         "model": settings.CHATBOT_MODEL,
         "messages": messages,
-        "temperature": 0.2,
     }
+    if urlsplit(settings.CHATBOT_BASE_URL).hostname != "generativelanguage.googleapis.com":
+        payload["temperature"] = 0.2
     if tools:
         payload["tools"] = tools
         payload["tool_choice"] = "auto"
@@ -460,6 +513,90 @@ def _provider_request(messages, tools):
     )
     with urlopen(provider_request, timeout=settings.CHATBOT_TIMEOUT_SECONDS) as response:
         return json.loads(response.read().decode("utf-8")), provider_request
+
+
+def _provider_error_details(error):
+    try:
+        payload = json.loads(error.read().decode("utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        return {}
+
+    details = payload.get("error") if isinstance(payload, dict) else None
+    if not isinstance(details, dict):
+        return {}
+
+    safe_details = {}
+    for field in ("code", "type", "param"):
+        value = details.get(field)
+        if isinstance(value, str) and re.fullmatch(r"[A-Za-z0-9_.-]{1,64}", value):
+            safe_details[field] = value
+    return safe_details
+
+
+def _provider_name():
+    hostname = urlsplit(settings.CHATBOT_BASE_URL).hostname
+    if hostname == "generativelanguage.googleapis.com":
+        return "Gemini"
+    if hostname == "api.openai.com":
+        return "OpenAI"
+    return "Nhà cung cấp AI"
+
+
+def _provider_error_response(error):
+    details = _provider_error_details(error)
+    provider = _provider_name()
+    messages = {
+        400: (
+            f"{provider} từ chối cấu hình hoặc payload (HTTP 400). Kiểm tra model, "
+            "endpoint Chat Completions và khả năng hỗ trợ tool calling/tham số."
+        ),
+        401: (
+            f"{provider} không chấp nhận API key (HTTP 401). Kiểm tra CHATBOT_API_KEY "
+            "trong TelecomManagement_BE/.env và khởi động lại backend."
+        ),
+        403: (
+            f"Project/API key chưa được {provider} cấp quyền dùng model hoặc dịch vụ "
+            "(HTTP 403). Kiểm tra quyền project và model access."
+        ),
+        404: (
+            f"{provider} không tìm thấy model hoặc endpoint (HTTP 404). Kiểm tra "
+            "CHATBOT_MODEL và CHATBOT_BASE_URL."
+        ),
+        429: (
+            f"{provider} báo vượt hạn mức hoặc giới hạn tốc độ (HTTP 429). Kiểm tra "
+            "API billing, credits, spending limit và rate limit."
+        ),
+    }
+    if error.code >= 500:
+        message = (
+            f"{provider} đang gặp lỗi dịch vụ (HTTP {error.code}). "
+            "Vui lòng thử lại sau."
+        )
+    else:
+        message = messages.get(
+            error.code,
+            f"{provider} từ chối yêu cầu (HTTP {error.code}). "
+            "Kiểm tra cấu hình provider.",
+        )
+
+    logger.warning(
+        "Chatbot provider rejected request: status=%s error_type=%s "
+        "error_code=%s error_param=%s",
+        error.code,
+        details.get("type", "unknown"),
+        details.get("code", "unknown"),
+        details.get("param", "unknown"),
+    )
+    body = {
+        "code": "chatbot_provider_rejected",
+        "provider_status": error.code,
+        "error": message,
+    }
+    if "code" in details:
+        body["provider_error_code"] = details["code"]
+    if "param" in details:
+        body["provider_error_param"] = details["param"]
+    return JsonResponse(body, status=502)
 
 
 @api_view(["POST"])
@@ -536,9 +673,23 @@ def api_chatbot_ask(request):
         )
     messages.append({"role": "user", "content": message.strip()})
 
+    change_guidance = _change_request_guidance(request.user, message)
+    if change_guidance:
+        return JsonResponse(
+            {"success": True, "type": "text", "message": change_guidance},
+            status=200,
+        )
+
     if not settings.CHATBOT_API_KEY:
         return JsonResponse(
-            {"error": "Chatbot chưa được cấu hình CHATBOT_API_KEY ở backend."},
+            {
+                "code": "chatbot_not_configured",
+                "error": (
+                    "Chatbot chưa được cấu hình khóa API ở backend. Quản trị viên "
+                    "cần thêm CHATBOT_API_KEY vào TelecomManagement_BE/.env rồi "
+                    "khởi động lại backend."
+                ),
+            },
             status=503,
         )
     parsed_url = urlsplit(settings.CHATBOT_BASE_URL.rstrip("/"))
@@ -561,11 +712,7 @@ def api_chatbot_ask(request):
         try:
             provider_data, _ = _provider_request(messages, tools)
         except HTTPError as error:
-            logger.warning("Chatbot provider returned HTTP %s", error.code)
-            return JsonResponse(
-                {"error": "Dịch vụ AI từ chối yêu cầu. Vui lòng thử lại sau."},
-                status=502,
-            )
+            return _provider_error_response(error)
         except (URLError, TimeoutError, OSError, json.JSONDecodeError) as error:
             logger.warning("Chatbot provider request failed: %s", type(error).__name__)
             return JsonResponse(

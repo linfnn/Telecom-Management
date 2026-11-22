@@ -307,26 +307,34 @@ chung và collector dùng chung trước khi tăng quy mô.
 
 Chatbot nhận JSON `{ "message": "...", "history": [{ "role": "user|assistant", "content": "..." }] }`
 và trả đồng bộ câu trả lời hoặc kết quả xuất file. Request cần access token JWT.
-Backend gọi endpoint Chat Completions tương thích OpenAI; API key chỉ được lưu
-trong `.env` backend, không đưa vào frontend:
+Backend gọi Gemini qua endpoint Chat Completions tương thích OpenAI; API key chỉ
+được lưu trong `.env` backend, không đưa vào frontend:
 
 ```dotenv
-CHATBOT_API_KEY=<provider-api-key>
-CHATBOT_BASE_URL=https://api.openai.com/v1
-CHATBOT_MODEL=gpt-4o-mini
+CHATBOT_API_KEY=<gemini-api-key>
+CHATBOT_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai/
+CHATBOT_MODEL=gemini-3.5-flash-lite
 CHATBOT_TIMEOUT_SECONDS=30
 ```
 
-Khi chưa cấu hình `CHATBOT_API_KEY`, endpoint trả HTTP 503; lỗi từ nhà cung cấp
-được trả HTTP 502. Chatbot hiểu câu hỏi tiếng Việt/Anh nhưng luôn trả lời bằng
-tiếng Việt. Công cụ giới hạn ở truy vấn đọc: tổng quan, thiết bị, nhân viên,
-sự cố, lỗ hổng, liên kết và chỉ số hiệu suất; giới hạn số dòng trả về và áp dụng
-phạm vi hồ sơ/sự cố/lỗ hổng theo quyền người dùng. Admin chỉ có thể xuất backup
-JSON khi tin nhắn hiện tại nêu rõ yêu cầu xuất/backup; nội dung file được trả về
-cho Frontend để tải xuống và không gửi ngược cho nhà cung cấp AI. Các yêu cầu
-tạo/cập nhật/xóa chỉ nhận hướng dẫn theo quyền, không gọi API ghi dữ liệu.
-Nội dung câu hỏi, history và kết quả truy vấn đọc được gửi tới nhà cung cấp AI;
-không gửi API key hoặc nội dung backup cho nhà cung cấp.
+Thêm các dòng trên vào `TelecomManagement_BE/.env` (không commit file này) và
+khởi động lại backend. Cấu hình được đọc trực tiếp từ `.env` của backend, kể cả
+khi chạy `manage.py` từ thư mục gốc. Nếu thiếu key, endpoint trả HTTP 503 cùng
+mã `chatbot_not_configured`; lỗi từ nhà cung cấp trả HTTP 502 kèm mã trạng thái
+và hướng dẫn theo nguyên nhân. Với Gemini, backend không gửi tham số sampling
+`temperature` để tương thích các model Gemini mới.
+
+Chatbot hiểu câu hỏi tiếng Việt/Anh nhưng luôn trả lời bằng tiếng Việt. Các công
+cụ chỉ tra cứu dữ liệu. Backend xác thực quyền độc lập với mô hình AI: Admin
+được tra cứu toàn bộ; tài khoản không phải Admin chỉ xem hồ sơ của mình và sự
+cố/lỗ hổng được giao, còn phạm vi thiết bị, liên kết và hiệu suất theo quyền
+đọc hiện có của API. Không có công cụ tạo/cập nhật/xóa; các yêu cầu này chỉ nhận
+hướng dẫn theo quyền và không gọi API ghi dữ liệu. Admin có thể yêu cầu rõ ràng
+để xuất backup JSON; file chỉ trả về Frontend để tải xuống, không gửi cho nhà
+cung cấp AI.
+
+Nội dung câu hỏi, lịch sử hội thoại và kết quả truy vấn đọc được gửi tới nhà
+cung cấp AI; không gửi API key hoặc nội dung backup cho nhà cung cấp.
 
 ### Nhân viên
 

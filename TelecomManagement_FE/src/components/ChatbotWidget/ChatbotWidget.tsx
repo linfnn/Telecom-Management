@@ -115,6 +115,10 @@ export const ChatbotWidget: React.FC = () => {
                         body: { padding: 0, display: 'flex', flexDirection: 'column', height: '400px' }
                     }}
                 >
+                    <Text type="secondary" style={{ padding: "8px 16px 0", fontSize: 12 }}>
+                        Chatbot chỉ tra cứu dữ liệu theo quyền của bạn; không tự thêm,
+                        sửa hoặc xóa thông tin.
+                    </Text>
                     <div style={STYLES.body}>
                         {messages.map((msg, idx) => (
                             <div key={idx} style={getBubbleStyle(msg.role)}>
@@ -136,7 +140,7 @@ export const ChatbotWidget: React.FC = () => {
                     <div style={STYLES.footer}>
                         <Space.Compact style={{ width: '100%' }}>
                             <Input
-                                placeholder="Nhập câu hỏi hoặc lệnh..."
+                                placeholder="Nhập câu hỏi cần tra cứu..."
                                 value={inputValue}
                                 onChange={(e) => setInputValue(e.target.value)}
                                 onPressEnter={handleSend}

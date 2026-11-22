@@ -11,15 +11,14 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
 import os
-from dotenv import load_dotenv
-
-load_dotenv()
-
 from datetime import timedelta
 from pathlib import Path
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+load_dotenv(BASE_DIR / ".env")
 
 
 # Quick-start development settings - unsuitable for production
@@ -178,9 +177,11 @@ BACKUP_FORMAT = os.getenv("BACKUP_FORMAT")
 
 BACKUP_VERSION = int(os.getenv("BACKUP_VERSION"))
 
-CHATBOT_API_KEY = os.getenv("CHATBOT_API_KEY", "")
-CHATBOT_BASE_URL = os.getenv("CHATBOT_BASE_URL", "https://api.openai.com/v1")
-CHATBOT_MODEL = os.getenv("CHATBOT_MODEL", "gpt-4o-mini")
+CHATBOT_API_KEY = os.getenv("CHATBOT_API_KEY", "").strip()
+CHATBOT_BASE_URL = os.getenv(
+    "CHATBOT_BASE_URL", "https://generativelanguage.googleapis.com/v1beta/openai/"
+).strip()
+CHATBOT_MODEL = os.getenv("CHATBOT_MODEL", "gemini-3.5-flash-lite").strip()
 CHATBOT_TIMEOUT_SECONDS = int(os.getenv("CHATBOT_TIMEOUT_SECONDS", "30"))
 SOCKETIO_ALLOWED_ORIGINS = [
     origin.strip()

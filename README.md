@@ -65,12 +65,17 @@ database được restore kèm tài khoản đó.
 
 ## Chatbot AI
 
-Chatbot dùng `POST /qlmvt/api_chatbot_ask/`. Để bật câu trả lời AI, cấu hình
-`CHATBOT_API_KEY`, `CHATBOT_BASE_URL`, `CHATBOT_MODEL` ở
-`TelecomManagement_BE/.env`, sau đó khởi động lại backend. Không đặt key trong
-FE hoặc commit key. Chatbot hiểu đầu vào Việt/Anh và luôn trả lời tiếng Việt;
-chỉ đọc dữ liệu theo quyền, hướng dẫn thao tác ghi thay vì tự thực hiện. Admin
-có thể yêu cầu rõ ràng để tải backup JSON. Câu hỏi, history và kết quả tra cứu
+Chatbot dùng `POST /qlmvt/api_chatbot_ask/` và Gemini OpenAI-compatible API.
+Cấu hình `CHATBOT_API_KEY`, `CHATBOT_BASE_URL`,
+`CHATBOT_MODEL=gemini-3.5-flash-lite` ở `TelecomManagement_BE/.env`, sau đó
+khởi động lại backend. Có thể thêm trực tiếp các dòng cấu hình vào `.env` hiện
+có; không đặt key trong FE hoặc commit key. Khi thiếu key, backend trả HTTP 503
+và hướng dẫn cấu hình. Chatbot hiểu đầu vào Việt/Anh và luôn trả lời tiếng Việt;
+chỉ tra cứu theo quyền, hướng dẫn thao tác ghi thay vì tự thực hiện. Backend
+hiện phân quyền Chatbot theo Admin và tài khoản thường; tài khoản thường chỉ
+xem hồ sơ của mình và sự cố/lỗ hổng được giao, còn thiết bị/liên kết/hiệu suất
+theo quyền đọc hiện có của API. Admin có thể yêu cầu rõ ràng để tải backup JSON.
+Câu hỏi, history và kết quả tra cứu
 được chuyển tới provider; nội dung backup không được gửi tới provider.
 
 ## Kiểm tra
