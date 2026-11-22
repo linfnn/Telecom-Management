@@ -13,7 +13,7 @@
 Yêu cầu Node.js 22.12 trở lên và npm.
 
 ```bash
-npm install
+npm ci
 cp .env.example .env.local
 npm run dev
 ```

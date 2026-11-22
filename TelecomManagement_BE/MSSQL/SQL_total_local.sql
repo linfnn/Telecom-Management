@@ -1,14 +1,14 @@
-USE [master]
+USE [QuanLyMangVienThong]
 GO
 /****** Object:  Database [QuanLyMangVienThong]    Script Date: 6/26/2026 3:51:50 PM ******/
 -- bỏ đường dẫn , thay compatibility
-CREATE DATABASE [QuanLyMangVienThong]
+-- CREATE DATABASE [QuanLyMangVienThong]
 GO
 
-ALTER DATABASE [QuanLyMangVienThong] SET COMPATIBILITY_LEVEL = 170
+ALTER DATABASE [QuanLyMangVienThong] SET COMPATIBILITY_LEVEL = 150
 GO
 
-ALTER DATABASE [QuanLyMangVienThong] SET COMPATIBILITY_LEVEL = 170
+ALTER DATABASE [QuanLyMangVienThong] SET COMPATIBILITY_LEVEL = 150
 GO
 -- đã xoá full text dựng db cơ bản
 ALTER DATABASE [QuanLyMangVienThong] SET ANSI_NULL_DEFAULT OFF 
