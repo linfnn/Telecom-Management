@@ -6,20 +6,8 @@ import { Chart } from "react-chartjs-2";
 import { useTranslation } from "react-i18next";
 
 // Đăng ký toàn bộ các thành phần lõi của Chart.js phục vụ báo cáo đa dạng (Line, Bar, Doughnut)
-import {
-  ArcElement,
-  BarController,
-  BarElement,
-  CategoryScale,
-  Chart as ChartJS,
-  DoughnutController,
-  Legend,
-  LinearScale,
-  LineController,
-  LineElement,
-  PointElement,
-  Tooltip,
-} from "chart.js";
+import "chart.js/auto";
+import type { Chart as ChartJS } from "chart.js";
 import {
   type CapacityRow,
   type ErrorSeverityRow,
@@ -41,19 +29,7 @@ import {
   getVulnerabilityStatus,
 } from "../../api/reportsApi";
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  ArcElement,
-  LineController,
-  BarController,
-  DoughnutController,
-  Tooltip,
-  Legend,
-);
+
 
 const { Title } = Typography;
 
