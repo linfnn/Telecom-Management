@@ -7,27 +7,6 @@ export default defineConfig(({ mode }) => {
 
     return {
         plugins: [react()],
-        build: {
-            rolldownOptions: {
-                output: {
-                    codeSplitting: {
-                        groups: [
-                            {
-                                name: "react-vendor",
-                                test: /node_modules[\\/](react|react-dom|scheduler)[\\/]/,
-                                priority: 20,
-                            },
-                            {
-                                name: "antd-vendor",
-                                test: /node_modules[\\/](antd|@ant-design|@rc-component|rc-[^\\/]+)[\\/]/,
-                                priority: 10,
-                                maxSize: 350_000,
-                            },
-                        ],
-                    },
-                },
-            },
-        },
         server: {
             watch: {
                 usePolling: true,
