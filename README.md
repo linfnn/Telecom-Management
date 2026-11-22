@@ -4,6 +4,9 @@ Hệ thống quản lý hạ tầng viễn thông gồm React SPA và Django RES
 lưu dữ liệu nghiệp vụ trên MSSQL; model nghiệp vụ Django dùng `managed = False`,
 FE giao tiếp qua HTTP API và Socket.IO giám sát, không thay đổi database/schema.
 
+Hướng dẫn deploy FE/BE trên Render và lưu ý kết nối SQL Server được mô tả trong
+[DEPLOYMENT.md](./DEPLOYMENT.md).
+
 ## Thành phần
 
 - **Frontend — [TelecomManagement_FE](./TelecomManagement_FE/README.md):**
@@ -25,12 +28,12 @@ Trên macOS, SQL Server cần chạy trong Docker/VM hoặc host khác. Xem
 Terminal 1:
 
 ```bash
-cd TelecomManagement_BE
-python3 -m venv .venv
-source .venv/bin/activate
+python3 -m venv TelecomManagement_BE/.venv
+source TelecomManagement_BE/.venv/bin/activate
 python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
-cp .env.example .env
+python -m pip install -r TelecomManagement_BE/requirements.txt
+cp TelecomManagement_BE/.env.example TelecomManagement_BE/.env
+cd TelecomManagement_BE
 ```
 
 Điền thông tin kết nối MSSQL trong `TelecomManagement_BE/.env`. Nếu database
@@ -52,7 +55,7 @@ Terminal 2:
 
 ```bash
 cd TelecomManagement_FE
-npm install
+npm ci
 cp .env.example .env.local
 npm run dev
 ```
@@ -95,8 +98,12 @@ Dashboard nhận trạng thái ping qua Socket.IO `/socket.io`; backend
 chỉ kiểm tra IP đã đăng ký. CPU/RAM/nhiệt độ và trạng thái liên kết vật lý cần
 agent/SNMP hoặc controller riêng; hiện các thông tin này chưa có nguồn dữ liệu.
 
+`TelecomManagement_BE/requirements.txt` chứa Python dependencies của backend.
+FE dùng Node/npm riêng: `cd TelecomManagement_FE && npm ci`. Xem
+[hướng dẫn Render](./DEPLOYMENT.md) để cấu hình hai dịch vụ.
+
 README riêng: [Backend](./TelecomManagement_BE/README.md) mô tả API, Swagger,
 MSSQL và backup/restore; [Frontend](./TelecomManagement_FE/README.md) mô tả
-giao diện và lệnh phát triển. Root không cần `.env` hoặc `requirements.txt`
-chung: backend có `.env.example`/`requirements.txt`, frontend có
-`.env.example`/`package.json`.
+giao diện và lệnh phát triển. File `.env` chỉ dùng riêng cho backend; mẫu cấu
+hình là `TelecomManagement_BE/.env.example`. FE có
+`package.json`/`package-lock.json` riêng.

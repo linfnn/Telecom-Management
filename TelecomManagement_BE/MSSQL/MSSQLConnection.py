@@ -42,7 +42,7 @@ class SQLConnection:
 
         if self.database != DATABASE_NAME:
             raise ValueError(
-                f"SQL script tạo database '{DATABASE_NAME}'. "
+                f"SQL script sử dụng database '{DATABASE_NAME}'. "
                 f"Hãy đặt DB_NAME={DATABASE_NAME} trong .env."
             )
 
@@ -55,15 +55,15 @@ class SQLConnection:
         connection_string = (
             "DRIVER={ODBC Driver 18 for SQL Server};"
             f"SERVER={self._odbc_value(server)};"
-            f"DATABASE={self._odbc_value('master')};"
+            f"DATABASE={self._odbc_value(self.database)};"
             f"UID={self._odbc_value(self.username)};"
             f"PWD={self._odbc_value(self.password)};"
-            "Encrypt=no;"
+            "Encrypt=yes;"
             "TrustServerCertificate=yes;"
         )
         self.connection = pyodbc.connect(connection_string, autocommit=True)
         self.cursor = self.connection.cursor()
-        print(f"Đã kết nối SQL Server: {server}")
+        print(f"Đã kết nối SQL Server: {server} (DB: {self.database})")
 
     @staticmethod
     def read_sql_file(filepath):
@@ -75,6 +75,22 @@ class SQLConnection:
     @staticmethod
     def split_batches(sql):
         return re.split(r"(?im)^\s*GO\s*(?:--.*)?$", sql)
+
+    @staticmethod
+    def _should_skip_batch(batch):
+        # Loại bỏ comment để kiểm tra chính xác câu lệnh thực thi
+        cleaned = re.sub(r"--.*", "", batch)
+        cleaned = re.sub(r"/\*[\s\S]*?\*/", "", cleaned).strip().upper()
+
+        restricted_prefixes = (
+            "CREATE DATABASE",
+            "ALTER DATABASE",
+            "DROP DATABASE",
+            "CREATE LOGIN",
+            "ALTER LOGIN",
+            "DROP LOGIN",
+        )
+        return any(cleaned.startswith(prefix) for prefix in restricted_prefixes)
 
     def run(self):
         if not SQL_FILE.is_file():
@@ -88,6 +104,10 @@ class SQLConnection:
         self.connect()
         try:
             for index, batch in enumerate(batches, start=1):
+                if self._should_skip_batch(batch):
+                    print(f"Bỏ qua batch {index}/{len(batches)} (lệnh cấp server không khả dụng trên Somee)")
+                    continue
+
                 try:
                     self.cursor.execute(batch)
                 except pyodbc.Error as exc:
@@ -100,7 +120,7 @@ class SQLConnection:
             self.close()
 
         print(
-            f"Khởi tạo database '{DATABASE_NAME}' hoàn tất "
+            f"Khởi tạo dữ liệu cho database '{DATABASE_NAME}' hoàn tất "
             f"({len(batches)} batch SQL)."
         )
 

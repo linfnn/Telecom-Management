@@ -91,7 +91,7 @@ export function connectNetworkMonitorSocket(
   handlers.onStatus("connecting");
   socket = io(getSocketOrigin(), {
     path: "/socket.io",
-    transports: ["websocket"],
+    transports: ["websocket", "polling"],
     autoConnect: false,
     reconnection: true,
     reconnectionDelay: 1000,
